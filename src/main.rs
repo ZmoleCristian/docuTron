@@ -5,37 +5,106 @@
 //git repo: https://github.com/tragDate/docuTron
 //License: GPL-3.0
 
-use std::io::{self, Read};
-use reqwest::Client;
-use serde_json::json;
-use serde_json::Value;
+use std::ffi::OsStr;
+use std::io;
+use std::path::{Path, PathBuf};
+use structopt::StructOpt;
+use tokio::fs;
+use tokio::io::AsyncReadExt;
+use async_recursion::async_recursion;
+use std::pin::Pin;
+use std::future::Future;
 
-fn main() {
-    let mut input = String::new();
-    io::stdin().read_to_string(&mut input).unwrap();
-    let api_key = dotenv::var("OPENAI_API_KEY").expect("OPENAI_API_KEY enviorment variable must be set");
-    let markdown = tokio::runtime::Runtime::new().unwrap().block_on(send_to_gpt(&api_key, &input));
+#[derive(StructOpt, Debug)]
+#[structopt(name = "docuTron")]
+struct Opt {
+    #[structopt(short = "h", long)]
+    here: bool,
+    #[structopt(short = "e", long, default_value = "")]
+    extensions: String,
+}
+
+#[tokio::main]
+async fn main() {
+    let opt = Opt::from_args();
+    let api_key = dotenv::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable must be set");
+    let markdown = if opt.here {
+        let extensions: Vec<&str> = opt.extensions.split(",").collect();
+        let content = read_files_with_extension_recursive(Path::new("."), &extensions).await.unwrap();
+        send_to_gpt(&api_key, &content).await
+    } else {
+        let mut input = String::new();
+        tokio::io::stdin().read_to_string(&mut input).await.unwrap();
+        send_to_gpt(&api_key, &input).await
+    };
     println!("{}", markdown);
 }
 
+#[async_recursion]
+async fn read_files_with_extension_recursive(
+    dir: &Path,
+    extensions: &[&str],
+) -> io::Result<String> {
+    let mut contents = String::new();
+
+    if dir.is_dir() {
+        let mut entries = fs::read_dir(dir).await?;
+
+        while let Some(entry) = entries.next_entry().await? {
+            let path = entry.path();
+            if path.is_file() && has_valid_extension(&path, extensions) {
+                contents.push_str(&read_file_content(path).await);
+            } else if !extensions.is_empty() && path.is_dir() {
+                let subdir_contents =
+                    read_files_with_extension_recursive(&path, extensions).await?;
+                if !subdir_contents.trim().is_empty() {
+                    contents += &subdir_contents;
+                }
+            }
+        }
+    }
+
+    Ok(contents)
+}
+
+async fn read_file_content(path: PathBuf) -> String {
+    match fs::read_to_string(&path).await {
+        Ok(file_content) => {
+            format!("\n==>{}<==\n\n{}", path.to_string_lossy().as_ref(), file_content)
+        }
+        Err(err) => {
+            eprintln!("Error reading {:?}: {:?}", path, err);
+            String::new()
+        }
+    }
+}
+
+fn has_valid_extension(file_path: &PathBuf, valid_extensions: &[&str]) -> bool {
+    file_path.extension()
+        .and_then(OsStr::to_str)
+        .map_or(false, |ext| {
+            valid_extensions.iter().any(|valid_ext| ext == *valid_ext)
+        })
+}
+
 async fn send_to_gpt(api_key: &str, input: &str) -> String {
-    let client = Client::new();
-    let request_body = json!({
-        "model": "gpt-3.5",
+    let client = reqwest::Client::new();
+    let system_prompt = "You are a markdown expert, 
+    that does not talk,
+    only writes the extensive markdown documentation, 
+    without markdown code block or specifing the language, 
+    just pure markdown syntax,
+    use this format in this order: program name as title, description, features, requirements, installation, usage, author, License
+    to make your documentation as good as possible, try to not use actual code from source code,
+    keep in mind that your input is composed from multiple files comeing from the same parent directory and all the input representes only one program,
+    detect the programing language and understand how filles call each other,
+    do not make documentation for each file, only for the main file,
+    the other files are just called by the main file, and they are here to aid you in your documentation,
+    the filename name sits in this format ==> /path/to/file/filename.extension <==";
+    let request_body = serde_json::json!({
+        "model": "gpt-4",
         "messages": [
-            {"role": "system", "content": "You are a markdown expert, 
-            that does not talk,
-            only writes the extensive markdown documentation, 
-            without markdown code block or specifing the language, 
-            just pure markdown syntax,
-            use this format in this order: program name as title, description, features, requirements, installation, usage, author, License
-            to make your documentation as good as possible, try to not use actual code from source code,
-            keep in mind that your input is composed from multiple files comeing from the same parent directory and all the input representes only one program,
-            detect the programing language and understand how filles call each other,
-            do not make documentation for each file, only for the main file,
-            the other files are just called by the main file, and they are here to aid you in your documentation,
-            the filename name sits in this format ==> /path/to/file/filename.extension <==
-            "},
+            {"role": "system", "content": format!("{}", system_prompt)},
             {"role": "user", "content": format!("Write documentation for this code: {}", input)}
         ]
     });
@@ -47,12 +116,12 @@ async fn send_to_gpt(api_key: &str, input: &str) -> String {
         .send()
         .await
         .expect("Failed to send request to GPT");
-    
-    let response_text: Value = response.json().await.expect("Failed to parse GPT response");
+
+    let response_text: serde_json::Value = response.json().await.expect("Failed to parse GPT response");
+
     if response_text["error"].is_string() {
         println!("Error: {}", response_text["error"].as_str().unwrap());
     }
-    let markdown = response_text["choices"][0]["message"]["content"].as_str().unwrap_or("Failed to create documentation").to_string();
-  
-    markdown
+
+    response_text["choices"][0]["message"]["content"].as_str().unwrap_or("Failed to create documentation").to_string()
 }

@@ -1,5 +1,5 @@
 //Project: docuTron
-//Description: A simple program that uses OpenAI's GPT-4 to generate documentation for code
+//Description: A simple program that uses OpenAI's API to generate documentation for code
 //Author website: https:tragdate.ninja
 //Author: @tragDate on github tiktok and youtube
 //git repo: https://github.com/tragDate/docuTron
@@ -93,9 +93,8 @@ async fn send_to_gpt(api_key: &str, input: &str, model: &str) -> String {
     let system_prompt = "You are a markdown expert, 
     that does not talk,
     only writes the extensive markdown documentation, 
-    without markdown code block or specifing the language, 
     just pure markdown syntax,
-    use this format in this order: program name as title, description, features, requirements, installation, usage, author, License
+    use this format in this order: program name as title, description, features, requirements, installation build(if necessary, use newlines before codeblocks), usage(if you can asume after build/install, showcase multiple flags if necessary), author, License
     to make your documentation as good as possible, try to not use actual code from source code,
     keep in mind that your input is composed from multiple files comeing from the same parent directory and all the input representes only one program,
     detect the programing language and understand how filles call each other,

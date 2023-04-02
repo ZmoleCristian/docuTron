@@ -20,20 +20,23 @@ struct Opt {
     here: bool,
     #[structopt(short = "e", long, default_value = "")]
     extensions: String,
+    #[structopt(short = "m", long, default_value = "gpt-4")]
+    model: String,
 }
 
 #[tokio::main]
 async fn main() {
     let opt = Opt::from_args();
     let api_key = dotenv::var("OPENAI_API_KEY").expect("OPENAI_API_KEY environment variable must be set");
+    let model = opt.model;
     let markdown = if opt.here {
         let extensions: Vec<&str> = opt.extensions.split(",").collect();
         let content = read_files_with_extension_recursive(Path::new("."), &extensions).await.unwrap();
-        send_to_gpt(&api_key, &content).await
+        send_to_gpt(&api_key, &content, &model).await
     } else {
         let mut input = String::new();
         tokio::io::stdin().read_to_string(&mut input).await.unwrap();
-        send_to_gpt(&api_key, &input).await
+        send_to_gpt(&api_key, &input, &model).await
     };
     println!("{}", markdown);
 }
@@ -85,7 +88,7 @@ fn has_valid_extension(file_path: &PathBuf, valid_extensions: &[&str]) -> bool {
         })
 }
 
-async fn send_to_gpt(api_key: &str, input: &str) -> String {
+async fn send_to_gpt(api_key: &str, input: &str, model: &str) -> String {
     let client = reqwest::Client::new();
     let system_prompt = "You are a markdown expert, 
     that does not talk,
@@ -100,7 +103,7 @@ async fn send_to_gpt(api_key: &str, input: &str) -> String {
     the other files are just called by the main file, and they are here to aid you in your documentation,
     the filename name sits in this format ==> /path/to/file/filename.extension <==";
     let request_body = serde_json::json!({
-        "model": "gpt-4",
+        "model": format!("{}", model),
         "messages": [
             {"role": "system", "content": format!("{}", system_prompt)},
             {"role": "user", "content": format!("Write documentation for this code: {}", input)}

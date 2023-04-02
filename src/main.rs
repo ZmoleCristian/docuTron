@@ -12,8 +12,6 @@ use structopt::StructOpt;
 use tokio::fs;
 use tokio::io::AsyncReadExt;
 use async_recursion::async_recursion;
-use std::pin::Pin;
-use std::future::Future;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "docuTron")]

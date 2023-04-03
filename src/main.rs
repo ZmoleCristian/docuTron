@@ -1,6 +1,6 @@
 //Project: docuTron
 //Description: A simple program that uses OpenAI's API to generate documentation for code
-//Author website: https:tragdate.ninja
+//Author website: https://tragdate.ninja
 //Author: @tragDate on github tiktok and youtube
 //git repo: https://github.com/tragDate/docuTron
 //License: GPL-3.0

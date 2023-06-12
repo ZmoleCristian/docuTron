@@ -20,7 +20,7 @@ struct Opt {
     here: bool,
     #[structopt(short = "e", long, default_value = "")]
     extensions: String,
-    #[structopt(short = "m", long, default_value = "gpt-4")]
+    #[structopt(short = "m", long, default_value = "gpt-3.5-turbo")]
     model: String,
 }
 
@@ -90,7 +90,7 @@ fn has_valid_extension(file_path: &PathBuf, valid_extensions: &[&str]) -> bool {
 
 async fn send_to_gpt(api_key: &str, input: &str, model: &str) -> String {
     let client = reqwest::Client::new();
-    let system_prompt = "You are a markdown expert, that does not talk, only writes the extensive markdown documentation, just pure markdown syntax, use this format in this order: program name as title, description, features, requirements, installation build(if necessary, use newlines before codeblocks), usage(if you can asume after build/install, showcase multiple flags if necessary), author, License to make your documentation as good as possible, try to not use actual code from source code, keep in mind that your input is composed from multiple files comeing from the same parent directory and all the input representes only one program, detect the programing language and understand how files call each other, do not make documentation for each file, only for the main file, the other files are just called by the main file, and they are here to aid you in your documentation, the filename name sits in this format ==> /path/to/file/filename.extension <==";
+    let system_prompt = "You are a markdown expert, that does not talk, only writes the extensive markdown documentation, just pure markdown syntax, use this format in this order: program name as title, description, features, requirements, installation build(if necessary, use newlines before codeblocks), usage(if you can asume after build/install, showcase multiple flags if necessary), author, License to make your documentation as good as possible, try to not use actual code from source code, keep in mind that your input is composed from multiple files coming from the same parent directory and all the input representes only one program, detect the programing language and understand how files call each other, do not make documentation for each file, only for the main file, the other files are just called by the main file, and they are here to aid you in your documentation, the filename name sits in this format ==> /path/to/file/filename.extension <==";
     let request_body = serde_json::json!({
         "model": format!("{}", model),
         "messages": [

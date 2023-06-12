@@ -1,67 +1,69 @@
-# docuTron 🤖
-![](logo.png)
-## docuTron is a simple program that uses OpenAI's GPT to generate markdown documentation for code.
+# docuTron
 
-## ⭐ Features
+docuTron is a simple program that utilizes OpenAI's API to automatically generate markdown documentation for code. It supports reading files within a directory and understands how files interact with each other in a project. It also allows filtering files by specific extensions and works with any programming language.
 
-- Automatically generate documentation in markdown format
-- Customizable options allow you to choose the model used for generation
-- Specify desired extensions for the files to be processed
-- Read code files from stdin or from the current directory
+## Features
 
-## 🧰 Requirements
+- Automatic markdown documentation generation
+- Support for any programming language
+- Filter by file extension(s)
+- Read files from the current directory or standard input
+
+## Requirements
 
 - Rust 2021 edition
-- Cargo
-- Dependencies:
-  - serde_json 1.0
-  - reqwest 0.11 with "json" feature
-  - dotenv 0.15.0
-  - tokio 1 with "full" feature
-  - structopt 0.3
-  - walkdir 2.3
-  - async-recursion 1.0
+- An OpenAI API key
 
-## 💾 Installation
+## Dependencies
 
-To install and build the project, run:
+- serde_json: 1.0
+- reqwest: 0.11 (with json feature)
+- dotenv: 0.15.0
+- tokio: 1 (with full feature)
+- structopt: 0.3
+- walkdir: 2.3
+- async-recursion: 1.0
 
-```
-git clone https://github.com/tragDate/docuTron.git
-cd docuTron
+## Installation
+
+Build and install using cargo (Rust's package manager):
+
+```sh
 cargo build --release
 ```
 
-## ⌨️ Usage
+The generated binary can be found in `target/release`.
 
-1. Set the `OPENAI_API_KEY` environment variable to your OpenAI API key.
-2. Run the program with the desired options:
+## Usage
 
-To read all the code files from the current directory:
+To generate documentation for files in the current directory, simply run:
 
-```
-cd your_project
+```sh
 docuTron -h
 ```
 
-To read code files with specific extensions:
-```
-docuTron -h -e "rs,toml"
+To filter files by specific extensions, use the `-e` flag followed by a comma-separated list of extensions:
+
+```sh
+docuTron -h -e rs,py
 ```
 
-To use a custom GPT model:
-```
-./target/release/docuTron -h -m "gpt-4"
+To specify the OpenAI model to use, pass the `-m` flag along with the desired model:
+
+```sh
+docuTron -h -m gpt-8
 ```
 
-To read code files from stdin:
-```
-cat input_code.txt | ./target/release/docuTron
+To generate documentation from standard input, run the program without any flags:
+
+```sh
+docuTron < input.txt
 ```
 
-## 🥷 Author
+## Author
 
-[@tragDate](https://tragdate.ninja)
+@tragDate (GitHub, TikTok, YouTube)
+Website: https://tragdate.ninja
 
 ## License
 

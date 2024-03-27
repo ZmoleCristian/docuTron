@@ -1,3 +1,5 @@
+![image](logo.png)
+
 # docuTron
 
 docuTron is a simple program that utilizes OpenAI's API to automatically generate markdown documentation for code. It supports reading files within a directory and understands how files interact with each other in a project. It also allows filtering files by specific extensions and works with any programming language.
